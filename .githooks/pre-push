@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "ERROR: direct pushes to main are disabled for this clone." >&2
+    echo "Create a branch and use a reviewed merge instead." >&2
+    exit 1
+  fi
+done
+
+exit 0

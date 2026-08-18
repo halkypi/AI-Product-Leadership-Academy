@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+# Git's built-in whitespace check catches trailing whitespace and whitespace errors.
+git diff --cached --check
+
+# Reject obvious unresolved merge-conflict markers in staged Markdown/text files.
+if git grep --cached -n -E '^(<<<<<<< |=======|>>>>>>> )' -- '*.md' '*.txt' '*.py' '*.sh' 2>/dev/null; then
+  echo "ERROR: unresolved merge-conflict marker found in staged content." >&2
+  exit 1
+fi
+
+# The academy moved out of the private org repo. Do not reintroduce stale persistence paths.
+if git grep --cached -n -E 'halkypi/org|cgpt/(prompts|deep-research)' -- 'prompts/*.md' 'AGENTS.md' 'README.md' 2>/dev/null; then
+  echo "ERROR: stale private-repo reference found. Use halkypi/AI-Product-Leadership-Academy and root-level prompts/deep-research paths." >&2
+  exit 1
+fi
+
+# Block common secret-bearing files if they somehow become staged.
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$f" in
+    .env|*.pem|*.key|*credentials*.json|*secrets*.json)
+      echo "ERROR: refusing to commit potential secret file: $f" >&2
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
